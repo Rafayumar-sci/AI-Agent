@@ -1,11 +1,9 @@
 python-dotenv
-
 streamlit
-
 google-search-results
-
 langchain-groq
 langchain
 langgraph
+langgraph-checkpoint-mongodb
 pymongo
 langchain-core
