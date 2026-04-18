@@ -18,9 +18,68 @@ SERP_API_KEY = os.getenv("SERP_API_KEY")
 MONGODB_URI = os.getenv("MONGODB_URI")
 
 st.set_page_config(page_title="AI Search Agent", layout="wide")
-st.title("🔍 AI Search Agent")
-st.write("Powered by Groq & SerpAPI")
 
+# Custom CSS for better UI
+st.markdown("""
+    <style>
+        .hero-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 60px 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+        .hero-title {
+            font-size: 48px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .hero-subtitle {
+            font-size: 18px;
+            opacity: 0.9;
+            margin-bottom: 30px;
+        }
+        .search-container {
+            display: flex;
+            gap: 10px;
+            max-width: 700px;
+            margin: 30px auto 0;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .search-input-wrapper {
+            flex: 1;
+            min-width: 300px;
+        }
+        .results-container {
+            margin-top: 40px;
+        }
+        .result-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+        .result-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+        .result-link {
+            font-size: 14px;
+            color: #764ba2;
+            margin-bottom: 10px;
+        }
+        .result-snippet {
+            font-size: 14px;
+            color: #666;
+            line-height: 1.6;
+        }
+    </style>
+""", unsafe_allow_html=True)
 
 model = ChatGroq(
     model="llama-3.3-70b-versatile",
@@ -63,21 +122,53 @@ agent = create_agent(
     checkpointer=Checkpointer
 )
 
-# Streamlit UI
-st.sidebar.title("Search Settings")
-user_query = st.sidebar.text_input(
-    "Enter your search query:",
-    value="search on internet about ideoversity Arfa tower",
-    placeholder="What do you want to search for?"
-)
+# Main hero section
+st.markdown("""
+    <div class="hero-section">
+        <div class="hero-title">🔍 AI Search Agent</div>
+        <div class="hero-subtitle">Powered by Groq & SerpAPI</div>
+    </div>
+""", unsafe_allow_html=True)
 
-if st.sidebar.button("🔍 Search", use_container_width=True):
-    with st.spinner("Searching..."):
-        response = agent.invoke(
-            {"messages": [{"role": "user", "content": user_query}]},
-            config={"configurable": {"thread_id": "1234567"}}
-        )
-        result = response["messages"][-1].content
-        st.success("Search completed!")
-        st.markdown("### Results:")
+# Initialize session state
+if "search_triggered" not in st.session_state:
+    st.session_state.search_triggered = False
+
+
+def on_search_input():
+    st.session_state.search_triggered = True
+
+
+# Search input in hero
+col1, col2 = st.columns([4, 1], gap="small")
+
+with col1:
+    user_query = st.text_input(
+        "Search the internet:",
+        placeholder="What do you want to search for?",
+        label_visibility="collapsed",
+        on_change=on_search_input,
+        key="user_query_input"
+    )
+
+with col2:
+    search_button = st.button("🔍 Search", use_container_width=True)
+
+# Results display
+if search_button or st.session_state.search_triggered:
+    st.session_state.search_triggered = False
+    if user_query.strip():
+        with st.spinner("🔄 Searching..."):
+            response = agent.invoke(
+                {"messages": [{"role": "user", "content": user_query}]},
+                config={"configurable": {"thread_id": "1234567"}}
+            )
+            result = response["messages"][-1].content
+
+        st.success("✅ Search completed!")
+        st.markdown('<div class="results-container">', unsafe_allow_html=True)
+        st.markdown("### 📊 Results:")
         st.write(result)
+        st.markdown('</div>', unsafe_allow_html=True)
+    else:
+        st.warning("Please enter a search query")
