@@ -7,9 +7,24 @@ from langchain.agents import create_agent
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.checkpoint.mongodb import MongoDBSaver
 from pymongo import MongoClient
+import yagmail
+
 
 # Load environment variables from the .env file
 load_dotenv()
+
+yag= yagmail.SMTP("rafayumar176@gmail.com" ,"kymo vejr ibjj hcpg")
+
+
+def send_email_tool(recipient: str, subject: str, content: str)->str:
+    """Sends an email to recipient ,with subject and body."""
+    yag.send(
+        to=recipient,
+        subject=subject,
+        contents= body
+    )
+    return f"Email sent to {recipient} with subject '{subject}'"
+
 
 # Access your API keys
 
@@ -408,7 +423,7 @@ memory = InMemorySaver()
 
 agent = create_agent(
     model=model,
-    tools=[serpapi_search],
+    tools=[serpapi_search, send_email_tool],
     system_prompt="You are a helpful assistant",
     checkpointer=Checkpointer
 )
