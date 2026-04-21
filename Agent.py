@@ -58,7 +58,6 @@ def serpapi_search(query: str):
     search = GoogleSearch(params)
     results = search.get_dict()
 
-    # Extract top results (titles + links)
     if "organic_results" in results:
         return [
             {"title": r["title"], "link": r["link"],
@@ -75,7 +74,6 @@ agent = create_agent(
     checkpointer=Checkpointer
 )
 
-# Main hero section
 st.markdown("""
     <div class="hero-section">
         <div class="hero-title">🔍 AI Search Agent</div>
@@ -83,7 +81,6 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Initialize session state
 if "search_triggered" not in st.session_state:
     st.session_state.search_triggered = False
 
@@ -92,7 +89,6 @@ def on_search_input():
     st.session_state.search_triggered = True
 
 
-# Search input in hero
 col1, col2 = st.columns([4, 1], gap="small")
 
 with col1:
@@ -107,7 +103,6 @@ with col1:
 with col2:
     search_button = st.button("🔍 Search", use_container_width=True)
 
-# Results display
 if search_button or st.session_state.search_triggered:
     st.session_state.search_triggered = False
     if user_query.strip():
