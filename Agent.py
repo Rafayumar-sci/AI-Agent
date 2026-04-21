@@ -5,8 +5,6 @@ from serpapi import GoogleSearch
 from langchain_groq import ChatGroq
 from langchain.agents import create_agent
 from langgraph.checkpoint.memory import InMemorySaver
-from langgraph.checkpoint.mongodb import MongoDBSaver
-from pymongo import MongoClient
 import yagmail
 
 
@@ -30,7 +28,6 @@ def send_email_tool(recipient: str, subject: str, content: str) -> str:
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 SERP_API_KEY = os.getenv("SERP_API_KEY")
-MONGODB_URI = os.getenv("MONGODB_URI")
 
 st.set_page_config(page_title="AI Search Agent", layout="wide")
 
@@ -46,8 +43,8 @@ model = ChatGroq(
     api_key=GROQ_API_KEY
 )
 
-Client = MongoClient(MONGODB_URI)
-Checkpointer = MongoDBSaver(Client)
+memory = InMemorySaver()
+Checkpointer = memory
 
 
 def serpapi_search(query: str):
@@ -70,8 +67,6 @@ def serpapi_search(query: str):
         ]
     return {"error": "No results found"}
 
-
-memory = InMemorySaver()
 
 agent = create_agent(
     model=model,
