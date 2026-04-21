@@ -36,64 +36,7 @@ st.set_page_config(page_title="AI Search Agent", layout="wide")
 
 # Custom CSS for better UI
 st.markdown("""
-    <style>
-        .hero-section {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 60px 20px;
-            border-radius: 15px;
-            text-align: center;
-            margin-bottom: 40px;
-            color: white;
-        }
-        .hero-title {
-            font-size: 48px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        .hero-subtitle {
-            font-size: 18px;
-            opacity: 0.9;
-            margin-bottom: 30px;
-        }
-        .search-container {
-            display: flex;
-            gap: 10px;
-            max-width: 700px;
-            margin: 30px auto 0;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        .search-input-wrapper {
-            flex: 1;
-            min-width: 300px;
-        }
-        .results-container {
-            margin-top: 40px;
-        }
-        .result-card {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            border-left: 4px solid #667eea;
-        }
-        .result-title {
-            font-size: 18px;
-            font-weight: bold;
-            color: #667eea;
-            margin-bottom: 8px;
-        }
-        .result-link {
-            font-size: 14px;
-            color: #764ba2;
-            margin-bottom: 10px;
-        }
-        .result-snippet {
-            font-size: 14px;
-            color: #666;
-            line-height: 1.6;
-        }
-    </style>
+    
 """, unsafe_allow_html=True)
 
 model = ChatGroq(
