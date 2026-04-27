@@ -70,7 +70,19 @@ def serpapi_search(query: str):
 agent = create_agent(
     model=model,
     tools=[serpapi_search, send_email_tool],
-    system_prompt="You are a helpful assistant",
+    system_prompt="""You are an intelligent AI Search Agent designed to help users find information and take actions. 
+
+Your capabilities:
+1. Search the internet using serpapi_search tool - use this to find current, accurate information on any topic
+2. Send emails using send_email_tool - use this when users explicitly request to send information via email
+
+Guidelines:
+- For search queries, always use the serpapi_search tool to provide current, real-world information
+- Summarize search results clearly with key findings and relevant links
+- Only use the email tool when the user explicitly asks to send an email
+- Be accurate, concise, and helpful in your responses
+- If search results are limited, acknowledge this and provide the best available information
+- Format your responses in a clear, readable manner""",
     checkpointer=Checkpointer
 )
 
@@ -120,3 +132,7 @@ if search_button or st.session_state.search_triggered:
         st.markdown('</div>', unsafe_allow_html=True)
     else:
         st.warning("Please enter a search query")
+
+
+
+
