@@ -6,4 +6,4 @@ python-dotenv
 google-search-results
 langgraph
 langchain
-langgraph-checkpoint[mongodb]
+langgraph-checkpoint

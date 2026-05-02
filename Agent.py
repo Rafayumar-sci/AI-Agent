@@ -4,7 +4,7 @@ import streamlit as st
 from serpapi import GoogleSearch
 from langchain_groq import ChatGroq
 from langchain.agents import create_agent
-from langgraph.checkpoint.mongodb import MongoDBSaver
+from langgraph.checkpoint.memory import InMemorySaver
 import yagmail
 from pymongo import MongoClient
 from datetime import datetime
@@ -19,9 +19,6 @@ client = MongoClient(MONGODB_URI)
 db = client["ai_agent"]
 searches_collection = db["searches"]
 conversations_collection = db["conversations"]
-
-# Initialize MongoDB Checkpointer
-checkpointer = MongoDBSaver(db, auto_index=True)
 
 yag = yagmail.SMTP(os.getenv("EMAIL_USER"), os.getenv("EMAIL_PASS"))
 
@@ -106,7 +103,7 @@ model = ChatGroq(
     api_key=GROQ_API_KEY
 )
 
-memory = MongoDBSaver(db, auto_index=True)
+memory = InMemorySaver()
 Checkpointer = memory
 
 
