@@ -20,17 +20,17 @@ db = client["ai_agent"]
 searches_collection = db["searches"]
 conversations_collection = db["conversations"]
 
-yag = yagmail.SMTP(os.getenv("EMAIL_USER"), os.getenv("EMAIL_PASS"))
+# yag = yagmail.SMTP(os.getenv("EMAIL_USER"), os.getenv("EMAIL_PASS"))
 
 
-def send_email_tool(recipient: str, subject: str, content: str) -> str:
-    """Sends an email to recipient ,with subject and body."""
-    yag.send(
-        to=recipient,
-        subject=subject,
-        contents=content
-    )
-    return f"Email sent to {recipient} with subject '{subject}'"
+# def send_email_tool(recipient: str, subject: str, content: str) -> str:
+#     """Sends an email to recipient ,with subject and body."""
+#     yag.send(
+#         to=recipient,
+#         subject=subject,
+#         contents=content
+#     )
+#     return f"Email sent to {recipient} with subject '{subject}'"
 
 
 
@@ -89,7 +89,7 @@ def serpapi_search(query: str):
 
 agent = create_agent(
     model=model,
-    tools=[serpapi_search, send_email_tool,],
+    tools=[serpapi_search],
     system_prompt="""You are an intelligent AI Search Agent designed to help users find information and take actions. 
 
 IMPORTANT: Remember and acknowledge user information:
@@ -158,7 +158,6 @@ if search_button or st.session_state.search_triggered:
             )
             result = response["messages"][-1].content
 
-            # Add assistant response to history
             st.session_state.conversation_history.append({
                 
                 "role": "assistant",
