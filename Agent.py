@@ -4,14 +4,26 @@ import streamlit as st
 from serpapi import GoogleSearch
 from langchain_groq import ChatGroq
 from langchain.agents import create_agent
-from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.checkpoint.mongodb import MongoDBSaver
 import yagmail
+from pymongo import MongoClient
+from datetime import datetime
 
 
 # Load environment variables from the .env file
 load_dotenv()
 
-yag = yagmail.SMTP("rafayumar176@gmail.com", "kymo vejr ibjj hcpg")
+# MongoDB Connection
+MONGODB_URI = os.getenv("MONGODB_URI")
+client = MongoClient(MONGODB_URI)
+db = client["ai_agent"]
+searches_collection = db["searches"]
+conversations_collection = db["conversations"]
+
+# Initialize MongoDB Checkpointer
+checkpointer = MongoDBSaver(db, auto_index=True)
+
+yag = yagmail.SMTP(os.getenv("EMAIL_USER"), os.getenv("EMAIL_PASS"))
 
 
 def send_email_tool(recipient: str, subject: str, content: str) -> str:
@@ -24,10 +36,61 @@ def send_email_tool(recipient: str, subject: str, content: str) -> str:
     return f"Email sent to {recipient} with subject '{subject}'"
 
 
-# Access your API keys
+def get_search_history(limit: int = 10) -> list:
+    """Retrieve search history from MongoDB"""
+    try:
+        history = list(searches_collection.find().sort(
+            "timestamp", -1).limit(limit))
+        return history
+    except Exception as e:
+        st.error(f"Error retrieving history: {e}")
+        return []
+
+
+def search_previous_queries(keyword: str) -> str:
+    """Search for previous queries in the database"""
+    try:
+        results = list(searches_collection.find(
+            {"query": {"$regex": keyword, "$options": "i"}}).limit(5))
+        if results:
+            formatted = "\n".join(
+                [f"- {r['query']}: {r['response'][:100]}..." for r in results])
+            return f"Found previous searches:\n{formatted}"
+        return "No previous searches found with that keyword"
+    except Exception as e:
+        return f"Error searching: {e}"
+
+
+def store_to_database(data_type: str, query: str, response: str) -> str:
+    """Store data to MongoDB database"""
+    try:
+        if data_type == "search":
+            searches_collection.insert_one({
+                "query": query,
+                "response": response,
+                "timestamp": datetime.now(),
+                "thread_id": "1234567"
+            })
+            return f"Stored search: {query}"
+        elif data_type == "note":
+            conversations_collection.insert_one({
+                "query": query,
+                "response": response,
+                "timestamp": datetime.now(),
+                "thread_id": "1234567"
+            })
+            return f"Stored note: {query}"
+    except Exception as e:
+        return f"Error storing to database: {e}"
+
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+if not GROQ_API_KEY:
+    st.error("GROQ_API_KEY not found! Check your .env file.")
 SERP_API_KEY = os.getenv("SERP_API_KEY")
+if not SERP_API_KEY:
+    st.error("SERP_API_KEY not found! Check your .env file.")
+
 
 st.set_page_config(page_title="AI Search Agent", layout="wide")
 
@@ -43,8 +106,12 @@ model = ChatGroq(
     api_key=GROQ_API_KEY
 )
 
-memory = InMemorySaver()
+memory = MongoDBSaver(db, auto_index=True)
 Checkpointer = memory
+
+
+if "conversation_history" not in st.session_state:
+    st.session_state.conversation_history = []
 
 
 def serpapi_search(query: str):
@@ -69,20 +136,23 @@ def serpapi_search(query: str):
 
 agent = create_agent(
     model=model,
-    tools=[serpapi_search, send_email_tool],
+    tools=[serpapi_search, send_email_tool,
+           search_previous_queries, store_to_database],
     system_prompt="""You are an intelligent AI Search Agent designed to help users find information and take actions. 
+
+IMPORTANT: Remember and acknowledge user information:
+- If the user tells you their name, remember it and use it in all future responses
+- Refer back to previous messages in this conversation to recall user details
+- Be friendly and personable by using the user's name when appropriate
 
 Your capabilities:
 1. Search the internet using serpapi_search tool - use this to find current, accurate information on any topic
 2. Send emails using send_email_tool - use this when users explicitly request to send information via email
+3. Search previous queries using search_previous_queries - use this to recall past searches
+4. Store to database using store_to_database - use this to save important information
 
-Guidelines:
-- For search queries, always use the serpapi_search tool to provide current, real-world information
-- Summarize search results clearly with key findings and relevant links
-- Only use the email tool when the user explicitly asks to send an email
-- Be accurate, concise, and helpful in your responses
-- If search results are limited, acknowledge this and provide the best available information
-- Format your responses in a clear, readable manner""",
+Always review the full conversation history to remember user details and provide personalized responses.
+""",
     checkpointer=Checkpointer
 )
 
@@ -118,12 +188,24 @@ with col2:
 if search_button or st.session_state.search_triggered:
     st.session_state.search_triggered = False
     if user_query.strip():
+        # Add user message to history
+        st.session_state.conversation_history.append({
+            "role": "user",
+            "content": user_query
+        })
+
         with st.spinner("🔄 Searching..."):
             response = agent.invoke(
-                {"messages": [{"role": "user", "content": user_query}]},
+                {"messages": st.session_state.conversation_history},
                 config={"configurable": {"thread_id": "1234567"}}
             )
             result = response["messages"][-1].content
+
+            # Add assistant response to history
+            st.session_state.conversation_history.append({
+                "role": "assistant",
+                "content": result
+            })
 
         st.success("✅ Search completed!")
         st.markdown('<div class="results-container">', unsafe_allow_html=True)
@@ -132,7 +214,3 @@ if search_button or st.session_state.search_triggered:
         st.markdown('</div>', unsafe_allow_html=True)
     else:
         st.warning("Please enter a search query")
-
-
-
-
