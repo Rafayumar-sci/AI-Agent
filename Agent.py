@@ -20,17 +20,30 @@ db = client["ai_agent"]
 searches_collection = db["searches"]
 conversations_collection = db["conversations"]
 
-yag = yagmail.SMTP(os.getenv("EMAIL_USER"), os.getenv("EMAIL_PASS"))
+
+def get_email_client():
+    """Lazy initialization of yagmail SMTP client"""
+    email_user = os.getenv("EMAIL_USER")
+    email_pass = os.getenv("EMAIL_PASS")
+    if email_user and email_pass:
+        return yagmail.SMTP(email_user, email_pass)
+    return None
 
 
 def send_email_tool(recipient: str, subject: str, content: str) -> str:
     """Sends an email to recipient ,with subject and body."""
-    yag.send(
-        to=recipient,
-        subject=subject,
-        contents=content
-    )
-    return f"Email sent to {recipient} with subject '{subject}'"
+    yag = get_email_client()
+    if yag is None:
+        return "Error: Email credentials not configured. Please set EMAIL_USER and EMAIL_PASS in .env"
+    try:
+        yag.send(
+            to=recipient,
+            subject=subject,
+            contents=content
+        )
+        return f"Email sent to {recipient} with subject '{subject}'"
+    except Exception as e:
+        return f"Error sending email: {str(e)}"
 
 
 def get_search_history(limit: int = 10) -> list:
