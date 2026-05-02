@@ -100,7 +100,7 @@ Your capabilities:
 1. Search the internet using serpapi_search tool - use this to find current, accurate information on any topic
 
 
-give long explanation on your topic of discussion and then ask user if they want to search or send email or search previous queries or store to database
+give long explanation on your topic of discussion and then ask user if they want to search 
 """,
     checkpointer=Checkpointer
 )
