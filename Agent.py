@@ -20,78 +20,21 @@ db = client["ai_agent"]
 searches_collection = db["searches"]
 conversations_collection = db["conversations"]
 
-
-def get_email_client():
-    """Lazy initialization of yagmail SMTP client"""
-    email_user = os.getenv("EMAIL_USER")
-    email_pass = os.getenv("EMAIL_PASS")
-    if email_user and email_pass:
-        return yagmail.SMTP(email_user, email_pass)
-    return None
+yag = yagmail.SMTP(os.getenv("EMAIL_USER"), os.getenv("EMAIL_PASS"))
 
 
 def send_email_tool(recipient: str, subject: str, content: str) -> str:
     """Sends an email to recipient ,with subject and body."""
-    yag = get_email_client()
-    if yag is None:
-        return "Error: Email credentials not configured. Please set EMAIL_USER and EMAIL_PASS in .env"
-    try:
-        yag.send(
-            to=recipient,
-            subject=subject,
-            contents=content
-        )
-        return f"Email sent to {recipient} with subject '{subject}'"
-    except Exception as e:
-        return f"Error sending email: {str(e)}"
+    yag.send(
+        to=recipient,
+        subject=subject,
+        contents=content
+    )
+    return f"Email sent to {recipient} with subject '{subject}'"
 
 
-def get_search_history(limit: int = 10) -> list:
-    """Retrieve search history from MongoDB"""
-    try:
-        history = list(searches_collection.find().sort(
-            "timestamp", -1).limit(limit))
-        return history
-    except Exception as e:
-        st.error(f"Error retrieving history: {e}")
-        return []
 
 
-def search_previous_queries(keyword: str) -> str:
-    """Search for previous queries in the database"""
-    try:
-        results = list(searches_collection.find(
-            {"query": {"$regex": keyword, "$options": "i"}}).limit(5))
-        if results:
-            formatted = "\n".join(
-                [f"- {r['query']}: {r['response'][:100]}..." for r in results])
-            return f"Found previous searches:\n{formatted}"
-        return "No previous searches found with that keyword"
-    except Exception as e:
-        return f"Error searching: {e}"
-
-
-def store_to_database(data_type: str, query: str, response: str) -> str:
-    """Store data to MongoDB database"""
-    try:
-        if data_type == "search":
-            searches_collection.insert_one({
-                "query": query,
-                "response": response,
-                "timestamp": datetime.now(),
-                "thread_id": "1234567"
-            })
-            return f"Stored search: {query}"
-        elif data_type == "note":
-            conversations_collection.insert_one({
-                "query": query,
-                "response": response,
-                "timestamp": datetime.now(),
-                "thread_id": "1234567"
-            })
-            return f"Stored note: {query}"
-    except Exception as e:
-        return f"Error storing to database: {e}"
 
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
@@ -146,8 +89,7 @@ def serpapi_search(query: str):
 
 agent = create_agent(
     model=model,
-    tools=[serpapi_search, send_email_tool,
-           search_previous_queries, store_to_database],
+    tools=[serpapi_search, send_email_tool,],
     system_prompt="""You are an intelligent AI Search Agent designed to help users find information and take actions. 
 
 IMPORTANT: Remember and acknowledge user information:
