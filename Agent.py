@@ -140,8 +140,12 @@ with col2:
 if search_button or st.session_state.search_triggered:
     st.session_state.search_triggered = False
     if user_query.strip():
-        # Add user message to history
+        
+        
+       
+        
         st.session_state.conversation_history.append({
+            
             "role": "user",
             "content": user_query
         })
@@ -149,13 +153,16 @@ if search_button or st.session_state.search_triggered:
         with st.spinner("🔄 Searching..."):
             response = agent.invoke(
                 {"messages": st.session_state.conversation_history},
+                
                 config={"configurable": {"thread_id": "1234567"}}
             )
             result = response["messages"][-1].content
 
             # Add assistant response to history
             st.session_state.conversation_history.append({
+                
                 "role": "assistant",
+                
                 "content": result
             })
 
@@ -166,3 +173,4 @@ if search_button or st.session_state.search_triggered:
         st.markdown('</div>', unsafe_allow_html=True)
     else:
         st.warning("Please enter a search query")
+        
