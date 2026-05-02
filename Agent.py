@@ -47,7 +47,6 @@ if not SERP_API_KEY:
 
 st.set_page_config(page_title="AI Search Agent", layout="wide")
 
-# Custom CSS for better UI
 st.markdown("""
     
 """, unsafe_allow_html=True)
