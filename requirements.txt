@@ -2,6 +2,7 @@ langchain_groq
 yagmail
 streamlit
 python-dotenv
+groq
 google-search-results
 langgraph
 langchain
