@@ -1,7 +1,6 @@
 langchain_groq
 yagmail
 streamlit
-pymongo
 python-dotenv
 google-search-results
 langgraph

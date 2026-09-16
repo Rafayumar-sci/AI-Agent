@@ -6,31 +6,35 @@ from langchain_groq import ChatGroq
 from langchain.agents import create_agent
 from langgraph.checkpoint.memory import InMemorySaver
 import yagmail
-from pymongo import MongoClient
-from datetime import datetime
 
 
 # Load environment variables from the .env file
 load_dotenv()
 
-# MongoDB Connection
-MONGODB_URI = os.getenv("MONGODB_URI")
-client = MongoClient(MONGODB_URI)
-db = client["ai_agent"]
-searches_collection = db["searches"]
-conversations_collection = db["conversations"]
-
-# yag = yagmail.SMTP(os.getenv("EMAIL_USER"), os.getenv("EMAIL_PASS"))
+# Email (yagmail) - initialized lazily so the app starts even if creds are missing
+_email_client = None
 
 
-# def send_email_tool(recipient: str, subject: str, content: str) -> str:
-#     """Sends an email to recipient ,with subject and body."""
-#     yag.send(
-#         to=recipient,
-#         subject=subject,
-#         contents=content
-#     )
-#     return f"Email sent to {recipient} with subject '{subject}'"
+def _get_email_client():
+    global _email_client
+    if _email_client is None:
+        # Gmail app passwords are shown as "abcd efgh ijkl mnop" - strip spaces
+        email_pass = (os.getenv("EMAIL_PASS") or "").replace(" ", "")
+        _email_client = yagmail.SMTP(os.getenv("EMAIL_USER"), email_pass)
+    return _email_client
+
+
+def send_email_tool(recipient: str, subject: str, content: str) -> str:
+    """Sends an email to recipient, with subject and body."""
+    try:
+        _get_email_client().send(
+            to=recipient,
+            subject=subject,
+            contents=content
+        )
+        return f"Email sent to {recipient} with subject '{subject}'"
+    except Exception as e:
+        return f"Failed to send email: {e}"
 
 
 
@@ -88,7 +92,7 @@ def serpapi_search(query: str):
 
 agent = create_agent(
     model=model,
-    tools=[serpapi_search],
+    tools=[serpapi_search, send_email_tool],
     system_prompt="""You are an intelligent AI Search Agent designed to help users find information and take actions. 
 
 IMPORTANT: Remember and acknowledge user information:
@@ -98,7 +102,7 @@ IMPORTANT: Remember and acknowledge user information:
 
 Your capabilities:
 1. Search the internet using serpapi_search tool - use this to find current, accurate information on any topic
-
+2. Send emails using send_email_tool - use this when the user asks you to email someone (you need recipient address, subject and content)
 
 give long explanation on your topic of discussion and then ask user if they want to search 
 """,
