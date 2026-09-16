@@ -78,20 +78,9 @@ def serpapi_search(query: str):
 memory = InMemorySaver()
 Checkpointer = memory
 
+TOOLS = [serpapi_search, send_email_tool]
 
-def _make_chat_model(model_name: str) -> ChatGroq:
-    return ChatGroq(
-        model=model_name,
-        temperature=0.0,
-        max_retries=2,
-        api_key=GROQ_API_KEY
-    )
-
-
-agent = create_agent(
-    model=_make_chat_model(GROQ_MODEL_CANDIDATES[0]),
-    tools=[serpapi_search, send_email_tool],
-    system_prompt="""You are an intelligent AI Search Agent designed to help users find information and take actions.
+SYSTEM_PROMPT = """You are an intelligent AI Search Agent designed to help users find information and take actions.
 
 IMPORTANT: Remember and acknowledge user information:
 
@@ -103,9 +92,25 @@ Your capabilities:
 2. Send emails using send_email_tool - use this when the user asks you to email someone (you need recipient address, subject and content)
 
 give long explanation on your topic of discussion and then ask user if they want to search
-""",
-    checkpointer=Checkpointer
-)
+"""
+
+
+def _make_chat_model(model_name: str) -> ChatGroq:
+    return ChatGroq(
+        model=model_name,
+        temperature=0.0,
+        max_retries=2,
+        api_key=GROQ_API_KEY
+    )
+
+
+def _make_agent(model_name: str):
+    return create_agent(
+        model=_make_chat_model(model_name),
+        tools=TOOLS,
+        system_prompt=SYSTEM_PROMPT,
+        checkpointer=Checkpointer
+    )
 
 
 def run_agent(messages: list, thread_id: str):
@@ -113,13 +118,7 @@ def run_agent(messages: list, thread_id: str):
     last_err = None
     for model_name in GROQ_MODEL_CANDIDATES:
         try:
-            fallback_agent = create_agent(
-                model=_make_chat_model(model_name),
-                tools=agent.tools,
-                system_prompt=agent.system_prompt,
-                checkpointer=Checkpointer
-            )
-            return fallback_agent.invoke(
+            return _make_agent(model_name).invoke(
                 {"messages": messages},
                 config={"configurable": {"thread_id": thread_id}}
             )
